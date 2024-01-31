@@ -2,6 +2,7 @@ use std::{fs};
 use std::io::{Error, ErrorKind};
 use uuid::Uuid;
 use std::path::{Path, PathBuf};
+use std::collections::HashMap;
 
 const DATADIR: &str = ".taskspace";
 
@@ -46,3 +47,33 @@ fn createTask(alias: &str, dataDir: &PathBuf) -> Result<(), Error> {
 fn appendToIndex(alias: &str, id: &uuid::Uuid, dataDir: &PathBuf) -> Result<(), Error> {
     return Ok(());
 }
+
+fn init() -> Result<(), Error> {
+    // Find git root
+    // If at git root - great, proceed
+    // Else, show appropriate warning or proceed if a flag is set
+
+    // Init the data folder and the index
+    return Ok(());
+}
+
+fn switchTask(alias: &str) -> Result<(), Error> {
+    let dataDirectory = getDataDirectory();
+    // find ID in index
+    // log
+    // switch default to that ID
+    // get data of that ID
+    // run activation script based on data
+    return Ok(());
+}
+
+fn getData(id: &uuid::Uuid, dataDir: &PathBuf) -> Result<TaskData, Error> {
+    return Ok(());
+}
+
+#[derive(Debug)]
+struct TaskData {
+    id: uuid::Uuid,
+    properties: HashMap<String, String>,
+}
+
