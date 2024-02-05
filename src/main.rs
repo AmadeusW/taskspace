@@ -11,23 +11,23 @@ fn main() {
     println!("Hello, world!");
 }
 
-fn getDataDirectory() -> Option<PathBuf> {
-    let currentDir = std::env::current_dir()
+fn get_data_directory() -> Option<PathBuf> {
+    let current_dir = std::env::current_dir()
         .expect("Expected to find the current directory");
-    return findPathInTree(&currentDir, DATADIR);
+    return find_path_in_tree(&current_dir, DATADIR);
 }
 
-fn findPathInTree(startDir: &PathBuf, targetDir: &str) -> Option<PathBuf> {
+fn find_path_in_tree(start_dir: &PathBuf, target_dir: &str) -> Option<PathBuf> {
     loop {
-        let mut currentPath = startDir.clone();
+        let mut current_path = start_dir.clone();
         // Check if the target path is found
-        let candidatePath = currentPath.join(DATADIR);
-        if candidatePath.exists() {
-            return Some(candidatePath);
+        let candidate_path = current_path.join(DATADIR);
+        if candidate_path.exists() {
+            return Some(candidate_path);
         }
 
         // Move up to the parent directory
-        if !currentPath.pop() {
+        if !current_path.pop() {
             // If we can't go up further, break the loop
             break;
         }
@@ -37,28 +37,27 @@ fn findPathInTree(startDir: &PathBuf, targetDir: &str) -> Option<PathBuf> {
     None
 }
 
-fn createTask(alias: &str, dataDir: &PathBuf) -> Result<(), &'static str> {
+fn create_task(alias: &str, data_dir: &PathBuf) -> Result<(), &'static str> {
     let id = Uuid::new_v4();
 
-    let taskPath = dataDir.join(format!("{}", id));
-    fs::create_dir_all(&taskPath);
+    let task_path = data_dir.join(format!("{}", id));
+    fs::create_dir_all(&task_path);
 
-    appendToIndex(alias, &id, dataDir);
-    return Ok(());
+    return append_to_index(alias, &id, data_dir);
 }
 
-fn appendToIndex(alias: &str, id: &uuid::Uuid, dataDir: &PathBuf) -> Result<(), &'static str> {
-    let indexPath = dataDir.join(INDEXFILE);
-    let mut file = fs::File::create(&indexPath)
-        .expect(&format!("Expected to access the index file {}", indexPath.display()));
+fn append_to_index(alias: &str, id: &uuid::Uuid, data_dir: &PathBuf) -> Result<(), &'static str> {
+    let index_path = data_dir.join(INDEXFILE);
+    let mut file = fs::File::create(&index_path)
+        .expect(&format!("Expected to access the index file {}", index_path.display()));
     writeln!(&mut file, "{alias}:{id}");
     return Ok(());
 }
 
-fn getIdFromIndex(alias: &str, dataDir: &PathBuf) -> Option<Uuid> {// Result<Uuid, String> {
-    let indexPath = dataDir.join(INDEXFILE);
-    let file = fs::File::open(&indexPath)
-        .expect(&format!("Expected to open the index file {}", indexPath.display()));
+fn get_id_from_index(alias: &str, data_dir: &PathBuf) -> Option<Uuid> {// Result<Uuid, String> {
+    let index_path = data_dir.join(INDEXFILE);
+    let file = fs::File::open(&index_path)
+        .expect(&format!("Expected to open the index file {}", index_path.display()));
     let reader = BufReader::new(file);
     
     // Iterate over lines in the file
@@ -66,9 +65,9 @@ fn getIdFromIndex(alias: &str, dataDir: &PathBuf) -> Option<Uuid> {// Result<Uui
         let content = line.unwrap();
         if content.starts_with(alias) {
             if let Some(i) = content.find(':') {
-                let (_, guidStr) = &content.split_at(i + 1);
-                println!("Found {guidStr} in {content}");
-                match Uuid::parse_str(&guidStr)
+                let (_, guid_str) = &content.split_at(i + 1);
+                println!("Found {guid_str} in {content}");
+                match Uuid::parse_str(&guid_str)
                 {
                     Ok(id) => return Some(id),
                     Err(e) => return None,
@@ -79,7 +78,7 @@ fn getIdFromIndex(alias: &str, dataDir: &PathBuf) -> Option<Uuid> {// Result<Uui
     return None;
 }
 
-fn getOrCreateIndex(dataDir: &PathBuf) -> () {
+fn get_or_create_index(data_dir: &PathBuf) -> () {
     // Proposal: instead of passing dataDir to other methods,
     // get index and use functions on the index class
 }
@@ -93,8 +92,8 @@ fn init() -> Result<(), &'static str> {
     return Ok(());
 }
 
-fn switchTask(alias: &str) -> Result<(), &'static str> {
-    let dataDirectory = getDataDirectory();
+fn switch_task(alias: &str) -> Result<(), &'static str> {
+    let data_directory = get_data_directory();
     // find ID in index
     // log
     // switch default to that ID
