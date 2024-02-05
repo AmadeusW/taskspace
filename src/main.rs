@@ -1,7 +1,7 @@
-use std::{fs};
-use std::io::{BufRead, BufReader, Error, ErrorKind, Write};
+use std::fs;
+use std::io::{BufRead, BufReader, Write};
 use uuid::Uuid;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::collections::HashMap;
 
 const DATADIR: &str = ".taskspace";
@@ -14,12 +14,12 @@ fn main() {
 fn getDataDirectory() -> Option<PathBuf> {
     let currentDir = std::env::current_dir()
         .expect("Expected to find the current directory");
-    return findPathInTree(currentDir, DATADIR);
+    return findPathInTree(&currentDir, DATADIR);
 }
 
-fn findPathInTree(startDir: PathBuf, targetDir: &str) -> Option<PathBuf> {
+fn findPathInTree(startDir: &PathBuf, targetDir: &str) -> Option<PathBuf> {
     loop {
-        let mut currentPath = startDir;
+        let mut currentPath = startDir.clone();
         // Check if the target path is found
         let candidatePath = currentPath.join(DATADIR);
         if candidatePath.exists() {
@@ -37,7 +37,7 @@ fn findPathInTree(startDir: PathBuf, targetDir: &str) -> Option<PathBuf> {
     None
 }
 
-fn createTask(alias: &str, dataDir: &PathBuf) -> Result<(), Error> {
+fn createTask(alias: &str, dataDir: &PathBuf) -> Result<(), &'static str> {
     let id = Uuid::new_v4();
 
     let taskPath = dataDir.join(format!("{}", id));
@@ -47,25 +47,36 @@ fn createTask(alias: &str, dataDir: &PathBuf) -> Result<(), Error> {
     return Ok(());
 }
 
-fn appendToIndex(alias: &str, id: &uuid::Uuid, dataDir: &PathBuf) -> Result<(), Error> {
+fn appendToIndex(alias: &str, id: &uuid::Uuid, dataDir: &PathBuf) -> Result<(), &'static str> {
     let indexPath = dataDir.join(INDEXFILE);
-    let mut file = fs::File::create(indexPath)
+    let mut file = fs::File::create(&indexPath)
         .expect(&format!("Expected to access the index file {}", indexPath.display()));
-    //write!("{}:{id}", alias, id);
+    writeln!(&mut file, "{alias}:{id}");
     return Ok(());
 }
 
-fn getIdFromIndex(alias: &str, dataDir: &PathBuf) -> Result<&uuid::Uuid, Error> {
+fn getIdFromIndex(alias: &str, dataDir: &PathBuf) -> Option<Uuid> {// Result<Uuid, String> {
     let indexPath = dataDir.join(INDEXFILE);
-    let file = fs::File::open(indexPath)
+    let file = fs::File::open(&indexPath)
         .expect(&format!("Expected to open the index file {}", indexPath.display()));
     let reader = BufReader::new(file);
     
     // Iterate over lines in the file
     for line in reader.lines() {
-        println!("{}", line?);
+        let content = line.unwrap();
+        if content.starts_with(alias) {
+            if let Some(i) = content.find(':') {
+                let (_, guidStr) = &content.split_at(i + 1);
+                println!("Found {guidStr} in {content}");
+                match Uuid::parse_str(&guidStr)
+                {
+                    Ok(id) => return Some(id),
+                    Err(e) => return None,
+                }
+            }
+        }
     }
-    return Ok(());
+    return None;
 }
 
 fn getOrCreateIndex(dataDir: &PathBuf) -> () {
@@ -73,7 +84,7 @@ fn getOrCreateIndex(dataDir: &PathBuf) -> () {
     // get index and use functions on the index class
 }
 
-fn init() -> Result<(), Error> {
+fn init() -> Result<(), &'static str> {
     // Find git root
     // If at git root - great, proceed
     // Else, show appropriate warning or proceed if a flag is set
@@ -82,7 +93,7 @@ fn init() -> Result<(), Error> {
     return Ok(());
 }
 
-fn switchTask(alias: &str) -> Result<(), Error> {
+fn switchTask(alias: &str) -> Result<(), &'static str> {
     let dataDirectory = getDataDirectory();
     // find ID in index
     // log
@@ -92,9 +103,11 @@ fn switchTask(alias: &str) -> Result<(), Error> {
     return Ok(());
 }
 
-fn getData(id: &uuid::Uuid, dataDir: &PathBuf) -> Result<TaskData, Error> {
+/*
+fn getData(id: &Uuid, dataDir: &PathBuf) -> Result<TaskData, &'static str> {
     return Ok(());
 }
+*/
 
 #[derive(Debug)]
 struct TaskData {
