@@ -5,10 +5,21 @@ use std::path::PathBuf;
 use std::collections::HashMap;
 
 const DATADIR: &str = ".taskspace";
+const GITDIR: &str = ".git";
 const INDEXFILE: &str = "index.txt";
 
 fn main() {
     println!("Hello, world!");
+    let dir = match get_data_directory()
+    {
+        Some(x) => println!("Found data directory {:?}", x),
+        None => println!("Did not find data directory.")
+    };
+    let dir = match get_git_directory()
+    {
+        Some(x) => println!("Found git directory {:?}", x),
+        None => println!("Did not find git directory.")
+    };
 }
 
 fn get_data_directory() -> Option<PathBuf> {
@@ -17,11 +28,17 @@ fn get_data_directory() -> Option<PathBuf> {
     return find_path_in_tree(&current_dir, DATADIR);
 }
 
+fn get_git_directory() -> Option<PathBuf> {
+    let current_dir = std::env::current_dir()
+        .expect("Expected to find the current directory");
+    return find_path_in_tree(&current_dir, GITDIR);
+}
+
 fn find_path_in_tree(start_dir: &PathBuf, target_dir: &str) -> Option<PathBuf> {
+    let mut current_path = start_dir.clone();
     loop {
-        let mut current_path = start_dir.clone();
         // Check if the target path is found
-        let candidate_path = current_path.join(DATADIR);
+        let candidate_path = current_path.join(target_dir);
         if candidate_path.exists() {
             return Some(candidate_path);
         }
@@ -41,7 +58,8 @@ fn create_task(alias: &str, data_dir: &PathBuf) -> Result<(), &'static str> {
     let id = Uuid::new_v4();
 
     let task_path = data_dir.join(format!("{}", id));
-    fs::create_dir_all(&task_path);
+    fs::create_dir_all(&task_path)
+        .expect(&format!("Expected to be able to create {:?}", &task_path));
 
     return append_to_index(alias, &id, data_dir);
 }
@@ -110,7 +128,7 @@ fn getData(id: &Uuid, dataDir: &PathBuf) -> Result<TaskData, &'static str> {
 
 #[derive(Debug)]
 struct TaskData {
-    id: uuid::Uuid,
+    id: Uuid,
     properties: HashMap<String, String>,
 }
 
