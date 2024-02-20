@@ -26,7 +26,7 @@ fn main() {
     println!("Found data directory {}", data_dir.display());
 
     let current_alias = get_current_alias(&data_dir)
-        .expect("Expected to find current alias");
+        .expect("Expected to find current alias"); // TODO: Handle cases when there is no alias, e.g. new repo
     let current_id = get_id_from_index(&current_alias, &data_dir)
         .expect("Expected to find ID of the alias");
     
@@ -96,8 +96,11 @@ fn append_to_index(alias: &str, id: &uuid::Uuid, data_dir: &PathBuf) -> Result<(
 
 fn get_current_alias(data_dir: &PathBuf) -> Option<String> {
     let target_path = data_dir.join(CURRENTFILE);
-    let f = fs::File::open(&target_path)
-        .expect(&format!("Expected to open the index file {}", target_path.display()));
+    let f = match fs::File::open(&target_path) {
+        Ok(file) => file,
+        Err(e) => return None,
+    };
+
     let reader = BufReader::new(f);
     let mut content = String::new();
     for line in reader.lines() {
