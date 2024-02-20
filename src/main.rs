@@ -1,5 +1,5 @@
 use std::fs;
-use std::io::{BufRead, BufReader, Write};
+use std::io::{stdin, BufRead, BufReader, Write};
 use uuid::Uuid;
 use std::path::PathBuf;
 use std::collections::HashMap;
@@ -11,14 +11,15 @@ const CURRENTFILE: &str = "current.txt";
 
 fn main() {
     println!("Hello, world!");
-    let dir = get_data_directory();
+    let mut dir = get_data_directory();
     if dir.is_none() {
         println!("Did not find data directory.");
-        let dir = init();
-        if dir.is_none()
-        {
+        let init_dir = init();
+        if init_dir.is_none() {
             println!("Exiting.");
             return;
+        } else {
+            dir = init_dir;
         }
     }
     let data_dir = dir.unwrap();
@@ -133,29 +134,51 @@ fn get_id_from_index(alias: &str, data_dir: &PathBuf) -> Option<Uuid> {// Result
     return None;
 }
 
-fn get_or_create_index(data_dir: &PathBuf) -> () {
+fn create_index(target_dir: &PathBuf) -> Option<PathBuf> {
     // Proposal: instead of passing dataDir to other methods,
     // get index and use functions on the index class
+    println!("Creating index: {:?}", target_dir);
+    let candidate_path = target_dir.join(DATADIR);
+    fs::create_dir(candidate_path.as_path())
+        .expect("Expected to create directory"); // todo: better error message and return value
+    Some(candidate_path)
 }
 
 fn init() -> Option<PathBuf> {
-    let gitdir = get_git_directory();
-    if (gitdir.is_some()) {
-        println!("Found git directory {:?}", gitdir);
-        println!("Do you want to initialize taskspace in current directory or in git directory");
-        //get_or_create_index(_);
+    let git_dir_candidate = get_git_directory();
+    let mut input = String::new();
+    if (git_dir_candidate.is_some()) {
+        let mut git_dir = git_dir_candidate.unwrap();
+        println!("Found git directory: {:?}", git_dir);
+        git_dir.pop();
+        println!("Found candidate directory: {:?}", git_dir);
+        println!("Do you want to initialize taskspace in the candidate directory? [y][n]");
+        stdin().lock().read_line(&mut input)
+            .expect("Expected to receive user input");
+        match input.trim_end().to_lowercase().as_str() {
+            "y" => {
+                create_index(&git_dir);
+                return Some(git_dir);
+            }
+            _ => ()
+        }
     }
-    else {
-        println!("Did not find git directory.");
-        println!("Do you want to initialize taskspace in current directory?");
-        //get_or_create_index(_);
-    }
-    // Find git root
-    // If at git root - great, proceed
-    // Else, show appropriate warning or proceed if a flag is set
 
-    // Init the data folder and the index
-    return gitdir;
+    let current_dir = std::env::current_dir()
+        .expect("Expected to find the current directory");
+    println!("Current directory: {:?}", current_dir);
+    println!("Do you want to initialize taskspace in current directory? [y][n]");
+    stdin().lock().read_line(&mut input)
+        .expect("Expected to receive user input");
+    match input.trim_end().to_lowercase().as_str() {
+        "y" => {
+            create_index(&current_dir);
+            return Some(current_dir);
+        }
+        _ => ()
+    }
+
+    None
 }
 
 fn switch_task(alias: &str) -> Result<(), &'static str> {
