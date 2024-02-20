@@ -7,19 +7,40 @@ use std::collections::HashMap;
 const DATADIR: &str = ".taskspace";
 const GITDIR: &str = ".git";
 const INDEXFILE: &str = "index.txt";
+const CURRENTFILE: &str = "current.txt";
 
 fn main() {
     println!("Hello, world!");
-    let dir = match get_data_directory()
-    {
-        Some(x) => println!("Found data directory {:?}", x),
-        None => println!("Did not find data directory.")
+    let dir = get_data_directory();
+    if dir.is_none() {
+        println!("Did not find data directory.");
+        let dir = init();
+        if dir.is_none()
+        {
+            println!("Exiting.");
+            return;
+        }
+    }
+    let data_dir = dir.unwrap();
+    println!("Found data directory {}", data_dir.display());
+
+    let current_alias = get_current_alias(&data_dir)
+        .expect("Expected to find current alias");
+    let current_id = get_id_from_index(&current_alias, &data_dir)
+        .expect("Expected to find ID of the alias");
+    
+    if let task_data = get_task_data(&current_id, &data_dir) {
+        println!("Current task: {}", current_alias);
+    }
+    
+}
+
+fn get_task_data(id: &uuid::Uuid, data_dir: &PathBuf) -> Option<TaskData> {
+    let task_data = TaskData {
+        id: Uuid::from_u128(0x0u128),
+        sample: String::from("sample text")
     };
-    let dir = match get_git_directory()
-    {
-        Some(x) => println!("Found git directory {:?}", x),
-        None => println!("Did not find git directory.")
-    };
+    Some(task_data)
 }
 
 fn get_data_directory() -> Option<PathBuf> {
@@ -72,11 +93,27 @@ fn append_to_index(alias: &str, id: &uuid::Uuid, data_dir: &PathBuf) -> Result<(
     return Ok(());
 }
 
+fn get_current_alias(data_dir: &PathBuf) -> Option<String> {
+    let target_path = data_dir.join(CURRENTFILE);
+    let f = fs::File::open(&target_path)
+        .expect(&format!("Expected to open the index file {}", target_path.display()));
+    let reader = BufReader::new(f);
+    let mut content = String::new();
+    for line in reader.lines() {
+        // we are interested in just the single line
+        match line {
+            Ok(x) => return Some(x),
+            Err(x) => return None,
+        }
+    }
+    None
+}
+
 fn get_id_from_index(alias: &str, data_dir: &PathBuf) -> Option<Uuid> {// Result<Uuid, String> {
     let index_path = data_dir.join(INDEXFILE);
-    let file = fs::File::open(&index_path)
+    let f = fs::File::open(&index_path)
         .expect(&format!("Expected to open the index file {}", index_path.display()));
-    let reader = BufReader::new(file);
+    let reader = BufReader::new(f);
     
     // Iterate over lines in the file
     for line in reader.lines() {
@@ -101,13 +138,24 @@ fn get_or_create_index(data_dir: &PathBuf) -> () {
     // get index and use functions on the index class
 }
 
-fn init() -> Result<(), &'static str> {
+fn init() -> Option<PathBuf> {
+    let gitdir = get_git_directory();
+    if (gitdir.is_some()) {
+        println!("Found git directory {:?}", gitdir);
+        println!("Do you want to initialize taskspace in current directory or in git directory");
+        //get_or_create_index(_);
+    }
+    else {
+        println!("Did not find git directory.");
+        println!("Do you want to initialize taskspace in current directory?");
+        //get_or_create_index(_);
+    }
     // Find git root
     // If at git root - great, proceed
     // Else, show appropriate warning or proceed if a flag is set
 
     // Init the data folder and the index
-    return Ok(());
+    return gitdir;
 }
 
 fn switch_task(alias: &str) -> Result<(), &'static str> {
@@ -129,6 +177,7 @@ fn getData(id: &Uuid, dataDir: &PathBuf) -> Result<TaskData, &'static str> {
 #[derive(Debug)]
 struct TaskData {
     id: Uuid,
-    properties: HashMap<String, String>,
+    //properties: HashMap<String, String>,
+    sample: String,
 }
 
