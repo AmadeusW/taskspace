@@ -25,14 +25,17 @@ fn main() {
     let data_dir = dir.unwrap();
     println!("Found data directory {}", data_dir.display());
 
-    let current_alias = get_current_alias(&data_dir)
-        .expect("Expected to find current alias"); // TODO: Handle cases when there is no alias, e.g. new repo
-    let current_id = get_id_from_index(&current_alias, &data_dir)
+    if let Some(current_alias) = get_current_alias(&data_dir) {
+        let current_id = get_id_from_index(&current_alias, &data_dir)
         .expect("Expected to find ID of the alias");
     
-    if let task_data = get_task_data(&current_id, &data_dir) {
-        println!("Current task: {}", current_alias);
+        if let task_data = get_task_data(&current_id, &data_dir) {
+            println!("Current task: {}", current_alias);
+        }
+    } else {
+        println!("No task.");
     }
+
     
 }
 
