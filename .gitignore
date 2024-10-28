@@ -1,3 +1,6 @@
+env/
+__pycache__/
+
 # will have compiled files and executables
 debug/
 target/
