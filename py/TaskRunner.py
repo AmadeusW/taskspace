@@ -38,4 +38,3 @@ def execute_task(task_data, root_path):
             print(f"Failed to switch branch: {e}")
     else:
         print("The 'branch' key does not exist in the task data.")
-
